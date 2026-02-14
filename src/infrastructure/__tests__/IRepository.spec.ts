@@ -2,69 +2,205 @@ import { IRepository } from '../IRepository';
 import { Entity } from '../../domain/Entity';
 import { UniqueEntityID } from '../../domain/UniqueEntityID';
 import { Result } from '../../logic/Result';
-import { AppError } from '../../application/AppError';
 import { LocalizationService } from '../../localization/LocalizationService';
 import { en } from '../../localization/locales/en';
 
 LocalizationService.setLocaleData(en);
 
-// 1. Domain Entity
-interface UserProps { name: string; }
+interface UserProps { name: string; age: number; }
+
 class User extends Entity<UserProps> {
-  constructor(props: UserProps, id?: UniqueEntityID) { super(props, id); }
+  constructor(props: UserProps, id?: UniqueEntityID) { 
+    super(props, id); 
+  }
 }
 
-// 2. Fake Repository Implementasyonu (InMemory Database)
 class InMemoryUserRepository implements IRepository<User> {
   private users: User[] = [];
 
   async save(user: User): Promise<Result<void>> {
-    const exists = this.users.find(u => u.equals(user));
-    if (!exists) {
+    const index = this.users.findIndex(u => u.equals(user));
+    if (index >= 0) {
+      this.users[index] = user;
+    } else {
       this.users.push(user);
     }
     return Result.ok<void>();
   }
 
   async delete(id: string | number): Promise<Result<void>> {
-    // Basit filtreleme
-    this.users = this.users.filter(u => u['_id'].getValue() !== id);
+    this.users = this.users.filter(u => u.id.getValue() !== id);
     return Result.ok<void>();
   }
 
   async getById(id: string | number): Promise<Result<User>> {
-    const user = this.users.find(u => u['_id'].toString() === id.toString());
+    const user = this.users.find(u => u.id.toString() === id.toString());
     if (!user) {
-      // Burada 404 dönüyoruz.
-      // Gerçek projede LocalizationService.t(CoreKeys.NOT_FOUND) kullanırsın
       return Result.fail<User>("User not found");
     }
     return Result.ok<User>(user);
   }
+
+  // ✅ YENİ METODLAR
+  async exists(id: string | number): Promise<Result<boolean>> {
+    const result = await this.getById(id);
+    return Result.ok(result.isSuccess);
+  }
+
+  async count(): Promise<Result<number>> {
+    return Result.ok(this.users.length);
+  }
+
+  async findAll(options?: { limit?: number; offset?: number }): Promise<Result<User[]>> {
+    let users = [...this.users];
+    
+    if (options?.offset) {
+      users = users.slice(options.offset);
+    }
+    
+    if (options?.limit) {
+      users = users.slice(0, options.limit);
+    }
+    
+    return Result.ok(users);
+  }
 }
 
-// 3. Testler
-describe('Repository Interface', () => {
+describe('IRepository - Extended Methods', () => {
   let repo: IRepository<User>;
 
   beforeEach(() => {
     repo = new InMemoryUserRepository();
   });
 
-  it('should save and retrieve a user', async () => {
-    const newUser = new User({ name: 'Ahmet' });
-    await repo.save(newUser);
+  describe('exists', () => {
+    it('should return true when entity exists', async () => {
+      const user = new User({ name: 'John', age: 25 });
+      await repo.save(user);
 
-    const userId = newUser['_id'].toString();
-    const found = await repo.getById(userId);
+      const result = await repo.exists(user.id.toString());
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toBe(true);
+    });
 
-    expect(found.isSuccess).toBe(true);
-    expect(found.getValue().props.name).toBe('Ahmet');
+    it('should return false when entity does not exist', async () => {
+      const result = await repo.exists('non-existent-id');
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toBe(false);
+    });
   });
 
-  it('should return fail when user not found', async () => {
-    const result = await repo.getById('non-existing-id');
-    expect(result.isFailure).toBe(true);
-    expect(result.error).toBe('User not found');
+  describe('count', () => {
+    it('should return 0 for empty repository', async () => {
+      const result = await repo.count();
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toBe(0);
+    });
+
+    it('should return correct count', async () => {
+      await repo.save(new User({ name: 'User1', age: 20 }));
+      await repo.save(new User({ name: 'User2', age: 25 }));
+      await repo.save(new User({ name: 'User3', age: 30 }));
+
+      const result = await repo.count();
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue()).toBe(3);
+    });
+
+    it('should update count after delete', async () => {
+      const user = new User({ name: 'User1', age: 20 });
+      await repo.save(user);
+      
+      let count = await repo.count();
+      expect(count.getValue()).toBe(1);
+      
+      await repo.delete(user.id.toString());
+      
+      count = await repo.count();
+      expect(count.getValue()).toBe(0);
+    });
+  });
+
+  describe('findAll', () => {
+    beforeEach(async () => {
+      // Create 10 users
+      for (let i = 0; i < 10; i++) {
+        await repo.save(new User({ name: `User${i}`, age: 20 + i }));
+      }
+    });
+
+    it('should return all entities when no options', async () => {
+      const result = await repo.findAll();
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().length).toBe(10);
+    });
+
+    it('should limit results', async () => {
+      const result = await repo.findAll({ limit: 5 });
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().length).toBe(5);
+    });
+
+    it('should skip results', async () => {
+      const result = await repo.findAll({ offset: 5 });
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().length).toBe(5);
+    });
+
+    it('should combine offset and limit', async () => {
+      const result = await repo.findAll({ offset: 3, limit: 4 });
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().length).toBe(4);
+      expect(result.getValue()[0].props.name).toBe('User3');
+    });
+
+    it('should return empty array for out of range offset', async () => {
+      const result = await repo.findAll({ offset: 100 });
+      
+      expect(result.isSuccess).toBe(true);
+      expect(result.getValue().length).toBe(0);
+    });
+  });
+
+  describe('Integration - All methods together', () => {
+    it('should support full CRUD workflow', async () => {
+      // Create
+      const user = new User({ name: 'Integration Test', age: 30 });
+      await repo.save(user);
+      
+      // Exists
+      const exists = await repo.exists(user.id.toString());
+      expect(exists.getValue()).toBe(true);
+      
+      // Count
+      let count = await repo.count();
+      expect(count.getValue()).toBe(1);
+      
+      // Read
+      const found = await repo.getById(user.id.toString());
+      expect(found.getValue().props.name).toBe('Integration Test');
+      
+      // FindAll
+      const all = await repo.findAll();
+      expect(all.getValue().length).toBe(1);
+      
+      // Delete
+      await repo.delete(user.id.toString());
+      
+      // Verify deletion
+      const existsAfterDelete = await repo.exists(user.id.toString());
+      expect(existsAfterDelete.getValue()).toBe(false);
+      
+      count = await repo.count();
+      expect(count.getValue()).toBe(0);
+    });
   });
 });

@@ -56,4 +56,4 @@ export * from './localization/locales/en';
 export * from './localization/locales/tr';
 
 // Utils
-export * from './utils/shallowEqual';
+export * from './utils/deepEqual';
