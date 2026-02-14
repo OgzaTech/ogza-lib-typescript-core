@@ -14,19 +14,24 @@ export class CancellationToken implements ICancellationToken {
     return this.nativeSignal ? this.nativeSignal.aborted : false;
   }
 
-  // 2. İptal istendiyse direkt hata fırlatan metod (En sık kullanılan)
+  // 2. Native signal'e public erişim (Fetch, Axios vb. için)
+  get signal(): AbortSignal | undefined {
+    return this.nativeSignal;
+  }
+
+  // 3. İptal istendiyse direkt hata fırlatan metod
   throwIfCancellationRequested(): void {
     if (this.isCancellationRequested) {
-      throw new Error('OperationCanceled'); // Veya özel bir AppError sınıfı
+      throw new Error('OperationCanceled');
     }
   }
   
-  // 3. Statik: Hiçbir zaman iptal edilmeyecek boş token (Default parametreler için)
+  // 4. Statik: Hiçbir zaman iptal edilmeyecek boş token
   static get None(): ICancellationToken {
     return new CancellationToken();
   }
 
-  // 4. Controller'dan oluşturmak için yardımcı
+  // 5. Controller'dan oluşturmak için yardımcı
   static fromAbortSignal(signal: AbortSignal): CancellationToken {
     return new CancellationToken(signal);
   }

@@ -1,11 +1,17 @@
 import { CoreKeys } from "../../constants/CoreKeys";
 
 export const en = {
+  // Result
   [CoreKeys.RESULT.SUCCESS_WITH_ERROR]: "InvalidOperation: A result cannot be successful and contain an error",
   [CoreKeys.RESULT.FAIL_WITHOUT_ERROR]: "InvalidOperation: A failing result needs to contain an error message",
   [CoreKeys.RESULT.VALUE_ON_ERROR]: "Can't get the value of an error result. Use 'error' property.",
+  // Guard
   [CoreKeys.GUARD.NULL_OR_UNDEFINED]: "{name} is null or undefined",
   [CoreKeys.GUARD.EMPTY_STRING]: "{name} is empty",
+  [CoreKeys.GUARD.AT_LEAST]: "{name} must be at least {min} characters long",
+  [CoreKeys.GUARD.AT_MOST]: "{name} must be at most {max} characters long",
+  [CoreKeys.GUARD.RANGE]: "{name} must be between {min} and {max} characters long",
+  [CoreKeys.GUARD.INVALID_PATTERN]: "{name} has an invalid format",
 
   // Domain Errors
   [CoreKeys.ERRORS.VALIDATION]: "Validation failed.",
