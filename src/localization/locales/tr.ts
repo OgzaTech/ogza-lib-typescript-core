@@ -1,17 +1,11 @@
 import { CoreKeys } from "../../constants/CoreKeys";
 
 export const tr = {
-   // Result
   [CoreKeys.RESULT.SUCCESS_WITH_ERROR]: "Geçersizİşlem: Başarılı bir sonuç hata içeremez.",
   [CoreKeys.RESULT.FAIL_WITHOUT_ERROR]: "Geçersizİşlem: Başarısız bir sonuç hata mesajı içermelidir.",
   [CoreKeys.RESULT.VALUE_ON_ERROR]: "Hatalı bir sonucun değeri okunamaz. 'error' özelliğini kullanın.",
-  // Guard
   [CoreKeys.GUARD.NULL_OR_UNDEFINED]: "{name} değeri boş (null/undefined) olamaz.",
   [CoreKeys.GUARD.EMPTY_STRING]: "{name} değeri boş metin olamaz.",
-  [CoreKeys.GUARD.AT_LEAST]: "{name} en az {min} karakter uzunluğunda olmalıdır",
-  [CoreKeys.GUARD.AT_MOST]: "{name} en fazla {max} karakter uzunluğunda olmalıdır",
-  [CoreKeys.GUARD.RANGE]: "{name} {min} ile {max} karakter arasında olmalıdır",
-  [CoreKeys.GUARD.INVALID_PATTERN]: "{name} geçersiz bir formata sahip",
   
   // Domain Errors
   [CoreKeys.ERRORS.VALIDATION]: "Doğrulama hatası.",

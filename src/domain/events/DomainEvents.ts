@@ -1,62 +1,39 @@
 import { IDomainEvent } from "./IDomainEvent";
 import { UniqueEntityID } from "../UniqueEntityID";
-import { AggregateRoot } from "../AggregateRoot";
 
+// Event Handler fonksiyon tipi
 type EventHandler = (event: IDomainEvent) => void;
 
-/**
- * Domain Event Dispatcher
- * NOT: Global static state kullanır, test ortamlarında dikkatli kullanılmalı
- */
 export class DomainEvents {
-  // Event adı -> (Subscriber ID -> Handler fonksiyonu)
+  // --------------------------------------------------------
+  // YENİ YAPI: Map<EventAdı, Map<SubscriberId, Fonksiyon>>
+  // --------------------------------------------------------
+  // Burada EventHandler[] DEĞİL, Map<string, EventHandler> kullanıyoruz.
   private static handlersMap: Map<string, Map<string, EventHandler>> = new Map();
   
-  // Dispatch bekleyen aggregate'ler
-  private static markedAggregates: AggregateRoot<any>[] = [];
+  private static markedAggregates: any[] = [];
 
   /**
-   * Event dinleyici kaydeder (Idempotent)
-   * Aynı subscriberId ile tekrar kayıt yapılırsa güncellenir
+   * Olay Dinleyici Kaydetme (Idempotent Registration)
+   * Aynı subscriberId ile gelirse eskisini günceller (Array gibi eklemez).
    */
-  public static register(
-    callback: EventHandler, 
-    eventClassName: string, 
-    subscriberId: string
-  ): void {
+  public static register(callback: EventHandler, eventClassName: string, subscriberId: string): void {
+    // 1. Eğer bu Event için henüz hiç kayıt yoksa, boş bir Map oluştur
     if (!this.handlersMap.has(eventClassName)) {
       this.handlersMap.set(eventClassName, new Map());
     }
 
+    // 2. Bu Event'in dinleyicilerini al (Bu bir Map'tir, Array değil!)
     const subscribers = this.handlersMap.get(eventClassName)!;
+    
+    // 3. Map'e ekle veya güncelle
     subscribers.set(subscriberId, callback);
 
-    console.log(
-      `[DomainEvents] '${subscriberId}' subscribed to '${eventClassName}'. Total: ${subscribers.size}`
-    );
+    console.log(`[DomainEvents]: '${subscriberId}' subscribed to '${eventClassName}'. Total subs: ${subscribers.size}`);
   }
 
   /**
-   * Event dinleyici kaydını siler
-   */
-  public static unregister(eventClassName: string, subscriberId: string): void {
-    if (this.handlersMap.has(eventClassName)) {
-      const subscribers = this.handlersMap.get(eventClassName)!;
-      const deleted = subscribers.delete(subscriberId);
-      
-      if (deleted) {
-        console.log(`[DomainEvents] '${subscriberId}' unsubscribed from '${eventClassName}'`);
-      }
-      
-      // Event için dinleyici kalmadıysa map'ten de sil
-      if (subscribers.size === 0) {
-        this.handlersMap.delete(eventClassName);
-      }
-    }
-  }
-
-  /**
-   * Event'i hemen dispatch eder
+   * Olay Fırlatma (Dispatch)
    */
   public static dispatch(event: IDomainEvent): void {
     const eventClassName = event.constructor.name;
@@ -64,84 +41,37 @@ export class DomainEvents {
     if (this.handlersMap.has(eventClassName)) {
       const subscribers = this.handlersMap.get(eventClassName)!;
       
-      for (const [subscriberId, handler] of subscribers.entries()) {
-        try {
-          handler(event);
-        } catch (error) {
-          console.error(
-            `[DomainEvents] Handler '${subscriberId}' failed for '${eventClassName}':`, 
-            error
-          );
-        }
+      // Map üzerindeki değerleri (fonksiyonları) dönüyoruz
+      for (const handler of subscribers.values()) {
+        handler(event);
       }
     }
   }
 
-  /**
-   * Aggregate'i dispatch listesine ekler
-   */
-  public static markAggregateForDispatch(aggregate: AggregateRoot<any>): void {
+  // --- Aggregate İşlemleri (Aynı kalıyor) ---
+
+  public static markAggregateForDispatch(aggregate: any): void {
     const found = this.markedAggregates.find((a) => a.equals(aggregate));
     if (!found) {
       this.markedAggregates.push(aggregate);
     }
   }
 
-  /**
-   * Belirli bir aggregate'in tüm event'lerini dispatch eder
-   */
   public static dispatchEventsForAggregate(id: UniqueEntityID): void {
-    const aggregate = this.markedAggregates.find((a) => a['_id'].equals(id));
+    const aggregate = this.markedAggregates.find((a) => a._id.equals(id));
 
     if (aggregate) {
-      // Event'leri dispatch et
       aggregate.domainEvents.forEach((event: IDomainEvent) => {
         this.dispatch(event);
       });
-      
-      // Aggregate'i temizle
       aggregate.clearEvents();
-      
-      // Listeden kaldır
       this.markedAggregates = this.markedAggregates.filter((a) => !a.equals(aggregate));
     }
   }
 
-  /**
-   * Tüm handler'ları temizler (Test için)
-   */
+  // --- Temizlik ---
+
   public static clearHandlers(): void {
     this.handlersMap.clear();
-    console.log('[DomainEvents] All handlers cleared');
-  }
-
-  /**
-   * Bekleyen aggregate'leri temizler (Test için)
-   */
-  public static clearMarkedAggregates(): void {
-    this.markedAggregates = [];
-    console.log('[DomainEvents] All marked aggregates cleared');
-  }
-
-  /**
-   * Hem handler'ları hem aggregate'leri temizler (Test için)
-   */
-  public static clearAll(): void {
-    this.clearHandlers();
-    this.clearMarkedAggregates();
-  }
-
-  /**
-   * Debug için mevcut durumu gösterir
-   */
-  public static getState() {
-    return {
-      registeredEvents: Array.from(this.handlersMap.keys()),
-      subscriberCounts: Array.from(this.handlersMap.entries()).map(([event, subs]) => ({
-        event,
-        count: subs.size
-      })),
-      markedAggregatesCount: this.markedAggregates.length
-    };
   }
 }
