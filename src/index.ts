@@ -36,6 +36,8 @@ export * from './infrastructure/auth/ITokenService';
 export * from './infrastructure/notification/index';
 export * from './infrastructure/middleware/index'; 
 export * from './infrastructure/resilience/index';
+export * from './infrastructure/cache/index';      // ← YENİ
+export * from './infrastructure/websocket/index';  // ← YENİ
 
 // Infrastructure - HTTP Interfaces
 export * from './infrastructure/http/interfaces/IHttpClient';
