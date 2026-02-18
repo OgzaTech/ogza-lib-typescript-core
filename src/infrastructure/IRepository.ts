@@ -7,35 +7,11 @@ import { IPaginationRequest } from "../application/dto/IPaginationRequest";
  * 
  * @template T - Entity tipi
  */
-export interface IRepository<T> {
-  /**
-   * Entity'yi kaydeder (create veya update)
-   */
-  save(entity: T): Promise<Result<void>>;
-  
-  /**
-   * Entity'yi ID ile siler
-   */
-  delete(id: string | number): Promise<Result<void>>;
-  
-  /**
-   * ID ile entity getirir
-   */
-  getById(id: string | number): Promise<Result<T>>;
-  
-  /**
-   * Entity'nin var olup olmadığını kontrol eder
-   */
-  exists(id: string | number): Promise<Result<boolean>>;
-  
-  /**
-   * Toplam entity sayısını döndürür
-   */
-  count(): Promise<Result<number>>;
-  
-  /**
-   * Tüm entity'leri getirir (pagination destekli)
-   * Mevcut IPaginationRequest interface'ini kullanır
-   */
-  findAll(options?: Partial<IPaginationRequest>): Promise<Result<T[]>>;
+export interface IRepository<T, E = string> {
+  save(entity: T): Promise<Result<void, E>>;
+  delete(id: string | number): Promise<Result<void, E>>;
+  getById(id: string | number): Promise<Result<T, E>>;
+  exists(id: string | number): Promise<Result<boolean, E>>;
+  count(): Promise<Result<number, E>>;
+  findAll(options?: Partial<IPaginationRequest>): Promise<Result<T[], E>>;
 }

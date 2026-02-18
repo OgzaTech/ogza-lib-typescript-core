@@ -1,5 +1,4 @@
 import { Result } from "../logic/Result";
-import { ValidationError, UnauthorizedError, NotFoundError } from "../logic/errors";
 
 /**
  * Yapılandırılmış hata nesnesi
@@ -115,4 +114,42 @@ export namespace AppError {
       return `[${this.code}] ${this.message}`;
     }
   }
+  export class InvalidOperation implements StructuredError {
+    public readonly message: string;
+    public readonly code: string = 'INVALID_OPERATION';
+    public readonly details?: any;
+
+    private constructor(message: string, details?: any) {
+      this.message = message;
+      this.details = details;
+    }
+
+    public static create(message: string, details?: any): Result<never, InvalidOperation> {
+      return Result.fail<never, InvalidOperation>(new InvalidOperation(message, details));
+    }
+
+    public toString(): string {
+      return `[${this.code}] ${this.message}`;
+    }
+  }
+
+  export class Forbidden implements StructuredError {
+    public readonly message: string;
+    public readonly code: string = 'FORBIDDEN';
+    public readonly details?: any;
+
+    private constructor(message: string, details?: any) {
+      this.message = message;
+      this.details = details;
+    }
+
+    public static create(message: string, details?: any): Result<never, Forbidden> {
+      return Result.fail<never, Forbidden>(new Forbidden(message, details));
+    }
+
+    public toString(): string {
+      return `[${this.code}] ${this.message}`;
+    }
+  }
+
 }

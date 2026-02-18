@@ -51,7 +51,7 @@ class InMemoryUserRepository implements IRepository<User> {
     return Result.ok(this.users.length);
   }
 
-  async findAll(options?: { limit?: number; offset?: number }): Promise<Result<User[]>> {
+  async findAll(options?: { limit?: number; offset?: number }): Promise<Result<User[], string>> {
     let users = [...this.users];
     
     if (options?.offset) {
