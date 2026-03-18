@@ -65,4 +65,8 @@ export class UniqueEntityID extends ValueObject<{ value: string | number }> {
   public toString(): string {
     return String(this.props.value);
   }
+  public equals(other?: UniqueEntityID): boolean {
+    if (!other) return false
+    return String(this.props.value) === String(other.props.value)
+  }
 }
