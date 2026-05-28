@@ -18,7 +18,8 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "test": "jest",
     "test:watch": "jest --watch",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepare": "npm run build" 
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
