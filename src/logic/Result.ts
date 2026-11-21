@@ -12,7 +12,12 @@ export class Result<T, E = string> {
   public readonly error: E | null;
   private readonly _value: T | undefined;
 
-  private constructor(isSuccess: boolean, error?: E | null, value?: T) {
+  /**
+   * Durum nesne olarak alınır: başarılı sonuçta `error` hiç verilmez. Böylece E = never iken
+   * `strictNullChecks` kapalı derleyen projelerde de `null` argümanı tip hatası üretmez.
+   */
+  private constructor(state: { readonly isSuccess: boolean; readonly error?: E; readonly value?: T }) {
+    const { isSuccess, error, value } = state;
     if (isSuccess && error) {
       throw new Error(LocalizationService.t(CoreKeys.RESULT.SUCCESS_WITH_ERROR));
     }
@@ -32,14 +37,14 @@ export class Result<T, E = string> {
    * Başarılı sonuç oluşturur
    */
   public static ok<U>(value?: U): Result<U, never> {
-    return new Result<U, never>(true, null, value);
+    return new Result<U, never>({ isSuccess: true, value });
   }
 
   /**
    * Başarısız sonuç oluşturur
    */
   public static fail<U, E = string>(error: E): Result<U, E> {
-    return new Result<U, E>(false, error);
+    return new Result<U, E>({ isSuccess: false, error });
   }
 
   /**

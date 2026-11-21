@@ -46,7 +46,7 @@ describe('Result Class', () => {
       const expectedError = LocalizationService.t(CoreKeys.RESULT.SUCCESS_WITH_ERROR);
       expect(() => {
         // @ts-ignore: Private constructor'a erişim testi
-        new Result(true, "Error shouldn't be here", null);
+        new Result({ isSuccess: true, error: "Error shouldn't be here" });
       }).toThrow(expectedError);
     });
 
@@ -54,7 +54,7 @@ describe('Result Class', () => {
       const expectedError = LocalizationService.t(CoreKeys.RESULT.FAIL_WITHOUT_ERROR);
       expect(() => {
         // @ts-ignore: Private constructor'a erişim testi
-        new Result(false, null, null);
+        new Result({ isSuccess: false });
       }).toThrow(expectedError);
     });
   });

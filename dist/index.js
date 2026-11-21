@@ -43,6 +43,7 @@ __export(index_exports, {
   DatabaseConfigSchema: () => DatabaseConfigSchema,
   DateRange: () => DateRange,
   DomainEvents: () => DomainEvents,
+  DtoMapper: () => DtoMapper,
   Email: () => Email,
   EmailConfigSchema: () => EmailConfigSchema,
   Entity: () => Entity,
@@ -68,6 +69,7 @@ __export(index_exports, {
   NotImplementedError: () => NotImplementedError,
   NotificationChannel: () => NotificationChannel,
   PermissionDeniedError: () => PermissionDeniedError,
+  PersistenceMapper: () => PersistenceMapper,
   PhoneNumber: () => PhoneNumber,
   QueryBuilderExtensions: () => QueryBuilderExtensions,
   QueryHelpers: () => QueryHelpers,
@@ -248,7 +250,12 @@ var LocalizationService = class _LocalizationService {
 
 // src/logic/Result.ts
 var Result = class _Result {
-  constructor(isSuccess2, error, value) {
+  /**
+   * Durum nesne olarak alınır: başarılı sonuçta `error` hiç verilmez. Böylece E = never iken
+   * `strictNullChecks` kapalı derleyen projelerde de `null` argümanı tip hatası üretmez.
+   */
+  constructor(state) {
+    const { isSuccess: isSuccess2, error, value } = state;
     if (isSuccess2 && error) {
       throw new Error(LocalizationService.t(CoreKeys.RESULT.SUCCESS_WITH_ERROR));
     }
@@ -265,13 +272,13 @@ var Result = class _Result {
    * Başarılı sonuç oluşturur
    */
   static ok(value) {
-    return new _Result(true, null, value);
+    return new _Result({ isSuccess: true, value });
   }
   /**
    * Başarısız sonuç oluşturur
    */
   static fail(error) {
-    return new _Result(false, error);
+    return new _Result({ isSuccess: false, error });
   }
   /**
    * Değeri döner. Hata durumunda exception fırlatır.
@@ -561,6 +568,26 @@ var Mapper = class {
     if (!this.toPersistence) {
       throw new Error("toPersistence method is not implemented");
     }
+    return entities.map((entity) => this.toPersistence(entity));
+  }
+};
+
+// src/application/DtoMapper.ts
+var DtoMapper = class {
+  /** Entity listesini DTO listesine çevir. */
+  toDTOList(entities) {
+    return entities.map((entity) => this.toDTO(entity));
+  }
+};
+
+// src/application/PersistenceMapper.ts
+var PersistenceMapper = class {
+  /** Kalıcı model listesini Domain Entity listesine çevir. */
+  toDomainList(raws) {
+    return raws.map((raw) => this.toDomain(raw));
+  }
+  /** Entity listesini kalıcı model listesine çevir. */
+  toPersistenceList(entities) {
     return entities.map((entity) => this.toPersistence(entity));
   }
 };
@@ -4800,6 +4827,7 @@ var tr = {
   DatabaseConfigSchema,
   DateRange,
   DomainEvents,
+  DtoMapper,
   Email,
   EmailConfigSchema,
   Entity,
@@ -4825,6 +4853,7 @@ var tr = {
   NotImplementedError,
   NotificationChannel,
   PermissionDeniedError,
+  PersistenceMapper,
   PhoneNumber,
   QueryBuilderExtensions,
   QueryHelpers,

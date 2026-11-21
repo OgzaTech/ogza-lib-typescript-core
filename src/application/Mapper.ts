@@ -1,6 +1,11 @@
 /**
  * Base Mapper Class
  * Domain Entity ↔ DTO ↔ Persistence Model dönüşümleri
+ *
+ * @deprecated Yeni kodda `DtoMapper` (application katmanı, Entity → DTO) ve
+ * `PersistenceMapper` (repository katmanı, kalıcı model ↔ Entity) kullanın. Bu sınıf iki yönü tek
+ * sınıfta birleştirdiği için application katmanını kalıcı model tiplerine bağımlı kılar.
+ * Mevcut projeler kırılmasın diye korunuyor.
  * 
  * @template DomainEntity - İş mantığını içeren Entity
  * @template DTO - Frontend/API için sade veri transfer objesi

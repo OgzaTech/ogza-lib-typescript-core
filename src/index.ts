@@ -6,6 +6,8 @@ export * from './logic/errors';
 // Application
 export * from './application/IUseCase';
 export * from './application/Mapper';
+export * from './application/DtoMapper';
+export * from './application/PersistenceMapper';
 export * from './application/AppError';
 export * from './application/dto/index';
 export * from './application/adapter/index';

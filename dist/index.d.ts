@@ -8,6 +8,10 @@ declare class Result<T, E = string> {
     readonly isFailure: boolean;
     readonly error: E | null;
     private readonly _value;
+    /**
+     * Durum nesne olarak alınır: başarılı sonuçta `error` hiç verilmez. Böylece E = never iken
+     * `strictNullChecks` kapalı derleyen projelerde de `null` argümanı tip hatası üretmez.
+     */
     private constructor();
     /**
      * Başarılı sonuç oluşturur
@@ -142,6 +146,11 @@ interface IUseCase<IRequest, IResponse> {
  * Base Mapper Class
  * Domain Entity ↔ DTO ↔ Persistence Model dönüşümleri
  *
+ * @deprecated Yeni kodda `DtoMapper` (application katmanı, Entity → DTO) ve
+ * `PersistenceMapper` (repository katmanı, kalıcı model ↔ Entity) kullanın. Bu sınıf iki yönü tek
+ * sınıfta birleştirdiği için application katmanını kalıcı model tiplerine bağımlı kılar.
+ * Mevcut projeler kırılmasın diye korunuyor.
+ *
  * @template DomainEntity - İş mantığını içeren Entity
  * @template DTO - Frontend/API için sade veri transfer objesi
  * @template PersistenceModel - Veritabanı satır modeli (ORM)
@@ -174,6 +183,42 @@ declare abstract class Mapper<DomainEntity, DTO, PersistenceModel = unknown> {
      * Sadece toPersistence implement edilmişse kullanılabilir
      */
     toPersistenceList(entities: DomainEntity[]): PersistenceModel[];
+}
+
+/**
+ * DtoMapper — Domain Entity → DTO dönüşümleri (application katmanı).
+ *
+ * Kalıcı model (ORM/DB satırı) bilgisi içermez; o dönüşümler PersistenceMapper ile
+ * altyapı (repository) katmanında yapılır.
+ *
+ * @template DomainEntity - İş mantığını içeren Entity
+ * @template DTO - API / ön yüz için sade veri transfer objesi
+ */
+declare abstract class DtoMapper<DomainEntity, DTO> {
+    /** Domain Entity'yi DTO'ya çevir (API yanıtı için). */
+    abstract toDTO(entity: DomainEntity): DTO;
+    /** Entity listesini DTO listesine çevir. */
+    toDTOList(entities: readonly DomainEntity[]): DTO[];
+}
+
+/**
+ * PersistenceMapper — Kalıcı model ↔ Domain Entity dönüşümleri (altyapı / repository katmanı).
+ *
+ * Application ve domain katmanları kalıcı model tiplerini görmez; bu sınıfın implementasyonları
+ * repository katmanında durur.
+ *
+ * @template DomainEntity - İş mantığını içeren Entity
+ * @template PersistenceModel - Veritabanı satır modeli (ORM)
+ */
+declare abstract class PersistenceMapper<DomainEntity, PersistenceModel> {
+    /** Kalıcı modelden Domain Entity oluştur (yeniden yükleme). */
+    abstract toDomain(raw: PersistenceModel): DomainEntity;
+    /** Domain Entity'yi kalıcı modele çevir (DB kaydı için). */
+    abstract toPersistence(entity: DomainEntity): PersistenceModel;
+    /** Kalıcı model listesini Domain Entity listesine çevir. */
+    toDomainList(raws: readonly PersistenceModel[]): DomainEntity[];
+    /** Entity listesini kalıcı model listesine çevir. */
+    toPersistenceList(entities: readonly DomainEntity[]): PersistenceModel[];
 }
 
 /**
@@ -3344,4 +3389,4 @@ declare const tr: {
  */
 declare function deepEqual(obj1: any, obj2: any): boolean;
 
-export { AggregateRoot, ApiResponse, AppConfigSchema, AppError, ApplicationError, AsyncState, AuthConfigSchema, AuthenticationMiddleware, AuthorizationMiddleware, BaseQueryBuilder, BaseUnitOfWork, type CacheConfig, type CacheEntry, type CacheOptions, type CacheStats, CancellationToken, CircuitBreaker, type CircuitBreakerOptions, type CircuitBreakerStats, CircuitState, Color, type ConfigSchema, type ConfigValidationError, type ConfigValidationResult, ConfigValidator, ConflictError, Container, type CookieOptions, CoreKeys, CorsMiddleware, DatabaseConfigSchema, DateRange, type DeepPartial, DomainEvents, Email, EmailConfigSchema, Entity, ErrorHandlingMiddleware, EventBus, type EventBusOptions, type EventHandler, type EventType, EventTypes, type FieldError, type FieldRule, type FieldSchema, ForbiddenError, type FormSchema, FormValidator, Guard, type GuardResponse, type HttpMethod, HttpStatus, type IApiError, type IApiResponse, type IApiResponseMeta, type IAppConfig, type IAuthResponse, type IBaseNotification, type IBrowserStorage, type ICache, type ICancellationToken, type ICircuitBreaker, type IConfigValidator, type IContainer, type ICookieAdapter, type IDataNotification, type IDomainEvent, type IEmailNotification, type IEmailService, type IEncryptionService, type IEvent, type IEventBus, type IEventSubscription, type IFormValidator, type IGuardArgument, type IHashingService, type IHttpClient, type IHttpRequest, type IHttpResponse, type ILogger, type IMiddleware, type IMiddlewareContext, type IMiddlewarePipeline, INJECTABLE_METADATA_KEY, INJECT_METADATA_KEY, type INotificationRequest, type INotificationService, type IPaginatedResponse, type IPaginationRequest, type IQueryBuilder, type IRateLimiter, type IRepository, type ISessionManager, type ISmsNotification, type ISmsService, type ISoapClient, type IStorageAdapter, type ITelegramNotification, type ITelegramService, type ITokenPayload, type ITokenService, type ITransaction, type ITransactionManager, type ITranslator, type IUnitOfWork, type IUseCase, type IWebSocketClient, type IWebSocketNotification, type IWebSocketServer, type IWebSocketService, type IWhatsappNotification, type IWhatsappService, InMemoryAdapter, LocalStorageAdapter, LocalizationService, LoggingMiddleware, Mapper, MiddlewareContext, type MiddlewareHandler, type MiddlewareOptions, MiddlewarePipeline, Money, NativeWebSocketAdapter, type NextFunction, NotFoundError, NotImplementedError, NotificationChannel, type Operator, PermissionDeniedError, PhoneNumber, QueryBuilderExtensions, type QueryCondition, QueryHelpers, type QueryOptions, type QueryOrder, RateLimitAlgorithm, RateLimitMiddleware, type RateLimitOptions, type RateLimitResult, RateLimiter, RedisAdapter, type RedisConfig, RegexPatterns, Result, type SearchParams, ServerConfigSchema, type ServiceDescriptor, ServiceLifetime, ServiceTokens, ServiceUnavailableError, SocketIOClientAdapter, SocketIOServerAdapter, type SortDirection, type StorageOptions, type StoredItem, type StructuredError, TenantId, TimeoutMiddleware, TokenBucketRateLimiter, TransactionIsolationLevel, type TransactionOptions, URL, UnauthorizedError, UnexpectedError, UniqueEntityID, ValidationError, ValidationMiddleware, type ValidationResult, type ValidationRule, type ValidationRuleFn, ValueObject, type WebSocketClient, type WebSocketConfig, type WebSocketMessage, type WebSocketRoom, type WebSocketStats, alpha, alphanumeric, asyncUnique, confirmed, creditCard, custom, deepEqual, email, en, fileType, futureDate, iban, ipv4, isError, isIdle, isLoading, isSuccess, jsonString, macAddress, max, maxFileSize, maxLength, min, minAge, minLength, numeric, pastDate, pattern, phone, required, strongPassword, tr, url };
+export { AggregateRoot, ApiResponse, AppConfigSchema, AppError, ApplicationError, AsyncState, AuthConfigSchema, AuthenticationMiddleware, AuthorizationMiddleware, BaseQueryBuilder, BaseUnitOfWork, type CacheConfig, type CacheEntry, type CacheOptions, type CacheStats, CancellationToken, CircuitBreaker, type CircuitBreakerOptions, type CircuitBreakerStats, CircuitState, Color, type ConfigSchema, type ConfigValidationError, type ConfigValidationResult, ConfigValidator, ConflictError, Container, type CookieOptions, CoreKeys, CorsMiddleware, DatabaseConfigSchema, DateRange, type DeepPartial, DomainEvents, DtoMapper, Email, EmailConfigSchema, Entity, ErrorHandlingMiddleware, EventBus, type EventBusOptions, type EventHandler, type EventType, EventTypes, type FieldError, type FieldRule, type FieldSchema, ForbiddenError, type FormSchema, FormValidator, Guard, type GuardResponse, type HttpMethod, HttpStatus, type IApiError, type IApiResponse, type IApiResponseMeta, type IAppConfig, type IAuthResponse, type IBaseNotification, type IBrowserStorage, type ICache, type ICancellationToken, type ICircuitBreaker, type IConfigValidator, type IContainer, type ICookieAdapter, type IDataNotification, type IDomainEvent, type IEmailNotification, type IEmailService, type IEncryptionService, type IEvent, type IEventBus, type IEventSubscription, type IFormValidator, type IGuardArgument, type IHashingService, type IHttpClient, type IHttpRequest, type IHttpResponse, type ILogger, type IMiddleware, type IMiddlewareContext, type IMiddlewarePipeline, INJECTABLE_METADATA_KEY, INJECT_METADATA_KEY, type INotificationRequest, type INotificationService, type IPaginatedResponse, type IPaginationRequest, type IQueryBuilder, type IRateLimiter, type IRepository, type ISessionManager, type ISmsNotification, type ISmsService, type ISoapClient, type IStorageAdapter, type ITelegramNotification, type ITelegramService, type ITokenPayload, type ITokenService, type ITransaction, type ITransactionManager, type ITranslator, type IUnitOfWork, type IUseCase, type IWebSocketClient, type IWebSocketNotification, type IWebSocketServer, type IWebSocketService, type IWhatsappNotification, type IWhatsappService, InMemoryAdapter, LocalStorageAdapter, LocalizationService, LoggingMiddleware, Mapper, MiddlewareContext, type MiddlewareHandler, type MiddlewareOptions, MiddlewarePipeline, Money, NativeWebSocketAdapter, type NextFunction, NotFoundError, NotImplementedError, NotificationChannel, type Operator, PermissionDeniedError, PersistenceMapper, PhoneNumber, QueryBuilderExtensions, type QueryCondition, QueryHelpers, type QueryOptions, type QueryOrder, RateLimitAlgorithm, RateLimitMiddleware, type RateLimitOptions, type RateLimitResult, RateLimiter, RedisAdapter, type RedisConfig, RegexPatterns, Result, type SearchParams, ServerConfigSchema, type ServiceDescriptor, ServiceLifetime, ServiceTokens, ServiceUnavailableError, SocketIOClientAdapter, SocketIOServerAdapter, type SortDirection, type StorageOptions, type StoredItem, type StructuredError, TenantId, TimeoutMiddleware, TokenBucketRateLimiter, TransactionIsolationLevel, type TransactionOptions, URL, UnauthorizedError, UnexpectedError, UniqueEntityID, ValidationError, ValidationMiddleware, type ValidationResult, type ValidationRule, type ValidationRuleFn, ValueObject, type WebSocketClient, type WebSocketConfig, type WebSocketMessage, type WebSocketRoom, type WebSocketStats, alpha, alphanumeric, asyncUnique, confirmed, creditCard, custom, deepEqual, email, en, fileType, futureDate, iban, ipv4, isError, isIdle, isLoading, isSuccess, jsonString, macAddress, max, maxFileSize, maxLength, min, minAge, minLength, numeric, pastDate, pattern, phone, required, strongPassword, tr, url };
